@@ -1,0 +1,55 @@
+Data licenses
+=============
+
+The lists in this branch are generated daily from third-party data. They are
+not covered by the MIT license of the build code. Each list keeps the license
+of the source it was built from. A preset that combines several sources is
+distributed under the most restrictive license among them; CC BY-SA 4.0 is
+one-way compatible with GPL-3.0, so a mix of the two is GPL-3.0. The full
+text of GPL-3.0 is in COPYING.GPL-3.0 next to this file.
+
+Sources
+-------
+
+1. v2fly/domain-list-community, MIT License
+   https://github.com/v2fly/domain-list-community
+   Used for: geosite/<name>.txt, except the runetfreedom categories in 2.
+
+2. runetfreedom/russia-blocked-geosite, GPL-3.0
+   https://github.com/runetfreedom/russia-blocked-geosite
+   Used for: geosite/ru-blocked, ru-blocked-all, ru-available-only-inside,
+   refilter, antifilter-download, antifilter-download-community, gfw,
+   win-spy, win-update, win-extra, u17.
+   Its data comes from antifilter.download, community.antifilter.download
+   and re:filter (https://github.com/1andrevich/Re-filter-lists, MIT).
+
+3. runetfreedom/russia-blocked-geoip, GPL-3.0
+   https://github.com/runetfreedom/russia-blocked-geoip
+   Used for: geoip/ and geoip6/ ru-blocked, ru-blocked-community,
+   ru-whitelist, re-filter, ddos-guard, yandex.
+   Its data comes from the same projects as 2.
+
+4. Loyalsoldier/geoip, CC BY-SA 4.0
+   https://github.com/Loyalsoldier/geoip
+   Used for: all other geoip/ and geoip6/ lists (countries and services).
+   Country data is based on MaxMind GeoLite2:
+
+   This product includes GeoLite Data created by MaxMind, available from
+   https://www.maxmind.com
+
+   GeoLite data is provided under the GeoLite End User License Agreement
+   (https://www.maxmind.com/en/geolite2/eula), which incorporates CC BY-SA 4.0.
+   The agreement requires using the current version of the data and deleting
+   older copies within 30 days of a new release. Keep a copy of these lists
+   up to date, or do not keep it.
+
+Presets
+-------
+
+- presets/ru-direct.txt: sources 1, 2 and 4, GPL-3.0
+- presets/ru-direct-ip.txt: source 4, CC BY-SA 4.0
+- presets/ru-blocked.txt: sources 1, 2, 3 and 4, GPL-3.0
+- presets/ru-blocked-dev.txt: sources 1, 2, 3 and 4, GPL-3.0
+
+The lists are provided as is, without warranty of any kind. Whether a domain
+or network belongs to a list is decided by the upstream projects.

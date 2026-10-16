@@ -1,0 +1,14 @@
+lists:
+  - name: "CATEGORY-RU"
+    length: 5
+    rules:
+      - "domain:yandex.ru"
+      - "full:www.yandex.ru"
+      - "domain:ru"
+      - "regexp:^vk\\.com$"
+      - "domain:_dmarc.mail.ru"
+  - name: "extra"
+    length: 2
+    rules:
+      - "domain:from-yml.ru"
+      - "domain:ads.example.ru:@ads"

@@ -1,0 +1,127 @@
+{
+  "options": {
+    "allow_tld": false,
+    "max_shrink": 0.5,
+    "shrink_min_lines": 100
+  },
+  "sources": {
+    "geosite": [
+      {
+        "name": "v2fly",
+        "type": "v2fly-plain-yml",
+        "url": "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat_plain.yml",
+        "min_lists": 1000
+      },
+      {
+        "name": "runetfreedom",
+        "type": "v2ray-dat",
+        "url": "https://raw.githubusercontent.com/runetfreedom/russia-blocked-geosite/release/geosite.dat",
+        "sha256_url": "https://raw.githubusercontent.com/runetfreedom/russia-blocked-geosite/release/geosite.dat.sha256sum",
+        "min_lists": 5
+      }
+    ],
+    "geoip": [
+      {
+        "name": "loyalsoldier",
+        "type": "github-dir",
+        "repo": "Loyalsoldier/geoip",
+        "ref": "release",
+        "path": "text",
+        "ext": ".txt",
+        "min_lists": 200
+      },
+      {
+        "name": "runetfreedom",
+        "type": "github-dir",
+        "repo": "runetfreedom/russia-blocked-geoip",
+        "ref": "release",
+        "path": "text",
+        "ext": ".txt",
+        "min_lists": 3
+      }
+    ]
+  },
+  "presets": {
+    "ru-direct": {
+      "description": "Russian domains and IPv4, for Exclude mode (everything else goes through the VPN)",
+      "include": [
+        "geosite:category-ru",
+        "geosite:category-gov-ru",
+        "geosite:ru-available-only-inside",
+        "geosite:category-bank-ru",
+        "geosite:category-ecommerce-ru",
+        "geosite:category-retail-ru",
+        "geosite:category-media-ru",
+        "geosite:category-entertainment-ru",
+        "geosite:category-travel-ru",
+        "geosite:category-education-ru",
+        "geosite:category-medicine-ru",
+        "geosite:category-forums-ru",
+        "geosite:category-tech-media-ru",
+        "geosite:category-ai-ru",
+        "geosite:yandex",
+        "geosite:mailru",
+        "geosite:vk",
+        "geosite:2gis",
+        "geosite:avito",
+        "geosite:cian",
+        "geosite:headhunter",
+        "geosite:rutube",
+        "geosite:kinopoisk",
+        "geoip:ru"
+      ],
+      "min_lines": 10000
+    },
+    "ru-direct-ip": {
+      "description": "Russian IPv4 only, for routers where domain rules do not work",
+      "include": [
+        "geoip:ru"
+      ],
+      "min_lines": 5000
+    },
+    "ru-blocked": {
+      "description": "Popular services blocked or throttled in Russia (community-curated), for the mode where only listed traffic goes through the VPN",
+      "include": [
+        "geosite:antifilter-download-community",
+        "geosite:youtube",
+        "geosite:telegram",
+        "geoip:telegram",
+        "geoip:ru-blocked-community"
+      ],
+      "min_lines": 500
+    },
+    "ru-blocked-dev": {
+      "description": "ru-blocked plus AI, developer and software services that block Russian users or are blocked in Russia, for the mode where only listed traffic goes through the VPN",
+      "include": [
+        "geosite:antifilter-download-community",
+        "geosite:youtube",
+        "geosite:telegram",
+        "geoip:telegram",
+        "geoip:ru-blocked-community",
+        "geosite:category-ai-!cn",
+        "geosite:jetbrains",
+        "geosite:hashicorp",
+        "geosite:docker",
+        "geosite:gitlab",
+        "geosite:atlassian",
+        "geosite:notion",
+        "geosite:figma",
+        "geosite:canva",
+        "geosite:discord",
+        "geosite:autodesk",
+        "geosite:adobe",
+        "geosite:oracle",
+        "geosite:unity",
+        "geosite:intel",
+        "geosite:nvidia",
+        "geosite:amd",
+        "geosite:netflix",
+        "geosite:spotify",
+        "geosite:disney",
+        "geosite:hbo",
+        "geosite:primevideo"
+      ],
+      "min_lines": 500
+    }
+  }
+}
