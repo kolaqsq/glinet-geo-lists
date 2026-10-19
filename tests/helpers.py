@@ -4,6 +4,8 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES = os.path.join(ROOT, "tests", "fixtures")
 sys.path.insert(0, ROOT)
+# Tests must not print GitHub annotations: in Actions they would show up on the run page as real warnings.
+os.environ.pop("GITHUB_ACTIONS", None)
 
 
 def pb(num, value):
