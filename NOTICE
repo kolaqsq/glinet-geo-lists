@@ -13,23 +13,38 @@ Sources
 
 1. v2fly/domain-list-community, MIT License
    https://github.com/v2fly/domain-list-community
-   Used for: geosite/<name>.txt, except the runetfreedom categories in 2.
+   Used for: geosite/<name>.txt, except the lists in 2-6.
 
-2. runetfreedom/russia-blocked-geosite, GPL-3.0
-   https://github.com/runetfreedom/russia-blocked-geosite
-   Used for: geosite/ru-blocked, ru-blocked-all, ru-available-only-inside,
-   refilter, antifilter-download, antifilter-download-community, gfw,
-   win-spy, win-update, win-extra, u17.
-   Its data comes from antifilter.download, community.antifilter.download
-   and re:filter (https://github.com/1andrevich/Re-filter-lists, MIT).
+2. antifilter.download and community.antifilter.download, license not stated
+   https://antifilter.download, https://community.antifilter.download
+   Used for: geosite/antifilter-download, antifilter-download-community,
+   and with 3: ru-blocked, ru-blocked-all.
 
-3. runetfreedom/russia-blocked-geoip, GPL-3.0
+3. Re:filter, MIT License
+   https://github.com/1andrevich/Re-filter-lists
+   Used for: geosite/refilter, and with 2: ru-blocked, ru-blocked-all.
+
+4. runetfreedom/russia-domains-list, no license file
+   https://github.com/runetfreedom/russia-domains-list
+   Used for: geosite/ru-available-only-inside. Its author publishes it as part
+   of runetfreedom/russia-blocked-geosite under GPL-3.0, so it is treated as
+   GPL-3.0 here.
+
+5. Loyalsoldier/v2ray-rules-dat, GPL-3.0
+   https://github.com/Loyalsoldier/v2ray-rules-dat
+   Used for: geosite/gfw.
+
+6. WindowsSpyBlocker, MIT License
+   https://github.com/crazy-max/WindowsSpyBlocker
+   Used for: geosite/win-spy, win-update, win-extra.
+
+7. runetfreedom/russia-blocked-geoip, GPL-3.0
    https://github.com/runetfreedom/russia-blocked-geoip
    Used for: geoip/ and geoip6/ ru-blocked, ru-blocked-community,
    ru-whitelist, re-filter, ddos-guard, yandex.
-   Its data comes from the same projects as 2.
+   Its data comes from the same projects as 2 and 3.
 
-4. Loyalsoldier/geoip, CC BY-SA 4.0
+8. Loyalsoldier/geoip, CC BY-SA 4.0
    https://github.com/Loyalsoldier/geoip
    Used for: all other geoip/ and geoip6/ lists (countries and services).
    Country data is based on MaxMind GeoLite2:
@@ -46,10 +61,10 @@ Sources
 Presets
 -------
 
-- presets/ru-direct.txt: sources 1, 2 and 4, GPL-3.0
-- presets/ru-direct-ip.txt: source 4, CC BY-SA 4.0
-- presets/ru-blocked.txt: sources 1, 2, 3 and 4, GPL-3.0
-- presets/ru-blocked-dev.txt: sources 1, 2, 3 and 4, GPL-3.0
+- presets/ru-direct.txt: sources 1, 4 and 8, GPL-3.0
+- presets/ru-direct-ip.txt: source 8, CC BY-SA 4.0
+- presets/ru-blocked.txt: sources 1, 2, 7 and 8, GPL-3.0
+- presets/ru-blocked-dev.txt: sources 1, 2, 7 and 8, GPL-3.0
 
 The lists are provided as is, without warranty of any kind. Whether a domain
 or network belongs to a list is decided by the upstream projects.

@@ -3,14 +3,17 @@ import unittest
 import helpers  # noqa: F401
 
 from glgeo import guards
+from glgeo.report import Report
 
 OPTS = {"router_max_lines": 200000, "router_max_ips": 55000}
 
 
 class GuardsTest(unittest.TestCase):
     def test_shrink(self):
-        errors = guards.check_shrink({"a.txt": 40, "b.txt": 90}, {"a.txt": 100, "b.txt": 100, "c.txt": 5}, 0.5, 100)
+        report = Report()
+        errors = guards.check_shrink({"a.txt": 40, "b.txt": 90}, {"a.txt": 100, "b.txt": 100, "c.txt": 5}, 0.5, 100, report)
         self.assertEqual(errors, ["a.txt: 100 -> 40 lines"])
+        self.assertEqual(report.warnings, ["c.txt disappeared (had 5 lines)"])
 
     def test_min_lines(self):
         self.assertEqual(guards.check_min_lines("p.txt", 5, 5), [])

@@ -44,7 +44,7 @@ jobs:
       - name: Build
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/build.py --out out --previous-index "$RUNNER_TEMP/previous-index.json"
+        run: python3 scripts/build.py --out out --previous-index "$RUNNER_TEMP/previous-index.json" --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to release branch
         env:
@@ -58,6 +58,7 @@ jobs:
           git add -A
           git commit -q -m "Build $(date -u +%F)"
           git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" release
+          echo "Published to \`release\` as $(git rev-parse --short HEAD)." >> "$GITHUB_STEP_SUMMARY"
 
       # GitHub disables the schedule of a public repository after 60 days without "activity"
       # (not defined; the bot's push to release may not count). Re-enabling an enabled workflow

@@ -10,3 +10,7 @@ KEYS = {"url": (str, REQUIRED)}
 
 def load(src, kind, wanted):
     return parse_plain_yml(net.http_get(src["url"]))
+
+
+def updated(src):
+    return [(src["url"], net.last_modified(src["url"]))]

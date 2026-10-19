@@ -44,6 +44,7 @@ Common keys:
 | `name` | yes | Label used in log and error messages only. |
 | `type` | yes | How to fetch and parse the source, see below. |
 | `min_lists` | no (default `1`) | Guard: the minimum number of lists this source must **add**, counted after name collisions are resolved. Set it a bit below the normal number. Then a source that comes back nearly empty, or with a changed layout, fails the build instead of silently losing lists. |
+| `max_age_days` | no (default `7`) | Staleness check: warn when the upstream data has not changed for more than this many days. `0` turns the check off, for lists that rarely change by design. The date is the `Last-Modified` header of the download, or the last commit for files on raw.githubusercontent.com and `github-dir` (one GitHub API request each). A stale source is a warning, not an error: its lists are still published, because failing would also stop the updates of every other list. Warnings show up as annotations and in the summary of the workflow run. |
 
 ### type `v2fly-plain-yml` (geosite)
 
@@ -77,7 +78,25 @@ File format:
 - geosite: one rule per line, in v2fly syntax: `domain:`, `full:`, `keyword:`, `regexp:`, optional `:@attr`. A line without a prefix is `domain:`. `#` starts a comment.
 - geoip: one IPv4/IPv6 address or CIDR per line, `#` comments. Invalid lines are skipped and counted in the log.
 
-The geoip section currently supports only `github-dir`.
+### type `url-lists` (geosite and geoip)
+
+Lists from plain-text files at any URL. The config names each list and gives its files; a list made of several files is their union. A file used by several lists is downloaded once.
+
+| Key | Default | Effect |
+|---|---|---|
+| `lists` | — | `{"<list name>": ["<url>", ...]}`. Names must match the list name pattern above. |
+| `format` | `"rules"` | geosite only. `rules`: v2fly syntax as in `github-dir` (a plain domain per line works too). `hosts`: hosts-file lines `0.0.0.0 example.com`, each host becomes a domain. |
+
+```json
+{"name": "ru-blocked", "type": "url-lists", "max_age_days": 14, "lists": {
+  "refilter": ["https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst"],
+  "ru-blocked": ["https://community.antifilter.download/list/domains.lst",
+                 "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst"]}}
+```
+
+### `include:` rules
+
+A geosite rule `include:<name>` is replaced by the rules of list `<name>`, whichever source provides it, as in v2fly. `dlc.dat_plain.yml` has its includes resolved already; plain-text sources may not (`ru-available-only-inside` includes `category-gov-ru`). An include of an unknown list, an include that closes a cycle, or one with attributes is dropped and noted in the log.
 
 ## presets
 
@@ -117,6 +136,8 @@ These rules apply to every geosite list and preset. They are not configurable, e
 A source type is a module in `glgeo/sources/` registered in `REGISTRY` (`glgeo/sources/__init__.py`). It defines:
 - `KINDS`: which sections it can be used in, `"geosite"` and/or `"geoip"`;
 - `KEYS`: its own config keys, `{key: (type, default)}`, with `REQUIRED` as the default for mandatory keys. The config check uses this, so the new keys are validated automatically;
-- `load(src, kind, wanted)`: returns `{list name: data}`. The data is a list of `(kind, value, attrs)` rules for geosite and an `IpSet` for geoip. `wanted(name)` tells whether a list would be kept, so a source can skip downloading the others.
+- `load(src, kind, wanted)`: returns `{list name: data}`. The data is a list of `(kind, value, attrs)` rules for geosite and an `IpSet` for geoip. `wanted(name)` tells whether a list would be kept, so a source can skip downloading the others;
+- `updated(src)`: called after `load()`, returns `[(what, datetime or None)]`: when the upstream data last changed. `net.last_modified(url)` and `net.github_commit_date()` cover the usual cases. Used by `max_age_days`;
+- `check(src)`, optional: extra config checks beyond `KEYS`, returns a list of error messages.
 
-Name collisions, the name pattern and `min_lists` are handled in one place, `load_all`. Parsers that don't touch the network go to `glgeo/formats/`.
+Name collisions, the name pattern, `min_lists` and `max_age_days` are handled in one place, `load_all`. Parsers that don't touch the network go to `glgeo/formats/`.

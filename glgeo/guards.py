@@ -5,7 +5,6 @@ import re
 
 from . import net
 from .errors import BuildError
-from .log import log
 
 
 def check_min_lines(rel, count, min_lines):
@@ -27,25 +26,30 @@ def router_limit_problems(lines, v4, v6, opts):
     return problems
 
 
-def load_previous_index(ref):
+def load_previous_index(ref, report):
+    """Returns index.json of the previous build ({"generated", "files"}) or None."""
     if not ref:
         return None
     try:
         if re.match(r"^https?://", ref):
-            return json.loads(net.http_get(ref))["files"]
-        with open(ref, encoding="utf-8") as f:
-            return json.load(f)["files"]
-    except (BuildError, OSError, ValueError, KeyError) as e:
-        log(f"WARNING: previous index unavailable ({e}), shrink guard skipped")
+            previous = json.loads(net.http_get(ref))
+        else:
+            with open(ref, encoding="utf-8") as f:
+                previous = json.load(f)
+        if not (isinstance(previous, dict) and isinstance(previous.get("files"), dict)):
+            raise ValueError("no files in it")
+        return previous
+    except (BuildError, OSError, ValueError) as e:
+        report.warn(f"previous index unavailable ({e}), shrink guard skipped")
         return None
 
 
-def check_shrink(index, previous, max_shrink, min_prev):
+def check_shrink(index, previous, max_shrink, min_prev, report):
     errors = []
     for rel, old in sorted(previous.items()):
         new = index.get(rel)
         if new is None:
-            log(f"WARNING: {rel} disappeared (had {old} lines)")
+            report.warn(f"{rel} disappeared (had {old} lines)")
         elif old >= min_prev and new < old * (1 - max_shrink):
             errors.append(f"{rel}: {old} -> {new} lines")
     return errors

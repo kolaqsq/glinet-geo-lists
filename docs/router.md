@@ -53,7 +53,7 @@ The firewall is iptables + ipset (fw3). `nft list ruleset` is empty on this firm
 | Lines checked by the importer | 200 000 | For a file of 1.37M lines the GUI reported exactly 200 000 (199 998 accepted, 2 rejected) and said nothing about the rest. Whether the rest is still applied is not proven: a control line at the end of the file did not take effect, but it was checked while the parser was still running and never rechecked. Treat 200 000 lines as the limit. |
 | ipset size, per family | 65 536 entries | Shared by the networks from the list and the IPs of resolved domains. When full, new entries are lost silently (only `Set dst_net10 is full` in the kernel log), so domain rules stop working for sites not seen before. |
 | Domain count | not measured exactly | 75K domains + 89K networks loaded, and dnsmasq grew from ~3 to ~16 MB. With 200K domains the parser held ~90 MB for minutes and the router's DNS stopped answering for the whole network while it ran. |
-| Refresh | unclear | The forum describes a daily cron job (`0 3 * * *` in `/etc/gl_crontabs/crontabs.d/update_vpn_url`). On 4.11.0 it calls `/etc/init.d/vpnpolicy-apply`, which does not exist, so automatic refresh is not confirmed. |
+| Refresh | daily at 03:00 router time, if the cron job is right | The updater is `/usr/bin/update_vpn_domain.sh`. It requests the URL, compares the `ETag`, `Last-Modified` and `Content-Length` headers with the previous check, and only on a change downloads the list (20 s limit), replaces the file if the download succeeded and is not empty, and re-applies the policy. Firmware 4.11.0 schedules it with `0 3 * * * /usr/bin/update_vpn_domain.sh` in `/etc/gl_crontabs/crontabs.d/update_vpn_url`. On a router upgraded from older firmware that file may still hold the old job (`… vpnpolicy-apply restart`), which does nothing: then the list is never refreshed. See [Checking on your router](#checking-on-your-router). Read from the script on 4.11.0; a refresh with the right job has not been observed yet. |
 
 The two hard limits are why presets are checked in the build (`options.router_max_lines` and `options.router_max_ips` in [config.md](config.md)). The default IP budget is 55 000 networks, which leaves ~10 000 entries in the ipset for resolved domains. For a preset with tens of thousands of domains that may be tight, and lowering `router_max_ips` gives more room.
 
@@ -88,6 +88,18 @@ head /tmp/dnsmasq.d/via_domain                      # domains as dnsmasq rules
 ipset list dst_net10 | grep -c '^[0-9]'             # entries in the IPv4 set (limit 65536)
 ipset list dst_net10 | sed -n '/Members/,$p' | head # some of them
 logread | grep 'is full'                            # set overflow
+cat /etc/gl_crontabs/crontabs.d/update_vpn_url      # the refresh job
+ls -l --full-time /etc/domain_mac_list/             # when the list was last downloaded
 ```
+
+The refresh job should be `0 3 * * * /usr/bin/update_vpn_domain.sh`. If it mentions `vpnpolicy-apply`, it is left over from older firmware and the list is never refreshed. The firmware itself writes the right job like this (this changes the router, so it is your call):
+
+```sh
+echo '0 3 * * * /usr/bin/update_vpn_domain.sh' > /etc/gl_crontabs/crontabs.d/update_vpn_url
+echo '0 3 * * * /usr/bin/update_vpn_domain.sh' > /tmp/gl_crontabs/crontabs.d/update_vpn_url
+/etc/init.d/gl_timer restart
+```
+
+`/usr/bin/update_vpn_domain.sh` can also be run by hand to fetch a new build at once.
 
 From a LAN client, compare `curl -s https://ifconfig.me` (a site not in the list) with an IP echo service that is in the list. With domain rules, flush the client's DNS cache first and use curl rather than a browser, which may use its own DoH.

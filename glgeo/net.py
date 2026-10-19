@@ -1,9 +1,13 @@
 import concurrent.futures
+import datetime
+import email.utils
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from .errors import BuildError
@@ -11,6 +15,9 @@ from .errors import BuildError
 USER_AGENT = "glinet-geo-lists"
 
 _cache_dir = None
+_last_modified = {}  # url -> Last-Modified header of the response it was downloaded from
+
+RAW_GITHUB_RE = re.compile(r"^https://raw\.githubusercontent\.com/([^/]+/[^/]+)/(?:refs/heads/)?([^/]+)/(.+)$")
 
 
 def set_cache_dir(path):
@@ -30,16 +37,24 @@ def http_get(url, retries=3):
 
 
 def http_get_bytes(url, retries=3):
-    if not _cache_dir:
-        return _fetch(url, retries)
-    path = cache_path(_cache_dir, url)
-    if os.path.exists(path):
+    """The cache keeps the Last-Modified header next to the data, in <hash>.last-modified."""
+    path = cache_path(_cache_dir, url) if _cache_dir else None
+    if path and os.path.exists(path):
+        if os.path.exists(path + ".last-modified"):
+            with open(path + ".last-modified", encoding="utf-8") as f:
+                _last_modified[url] = f.read().strip()
         with open(path, "rb") as f:
             return f.read()
-    data = _fetch(url, retries)
-    with open(path + ".tmp", "wb") as f:
-        f.write(data)
-    os.replace(path + ".tmp", path)
+    data, modified = _fetch(url, retries)
+    if modified:
+        _last_modified[url] = modified
+    if path:
+        with open(path + ".tmp", "wb") as f:
+            f.write(data)
+        os.replace(path + ".tmp", path)
+        if modified:
+            with open(path + ".last-modified", "w", encoding="utf-8") as f:
+                f.write(modified)
     return data
 
 
@@ -52,7 +67,7 @@ def _fetch(url, retries):
         try:
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=60) as resp:
-                return resp.read()
+                return resp.read(), resp.headers.get("Last-Modified")
         except urllib.error.HTTPError as e:
             if e.code == 404 or attempt == retries - 1:
                 raise BuildError(f"{url}: HTTP {e.code}") from e
@@ -85,7 +100,28 @@ def github_dir(repo, ref, path="", ext=".txt"):
     if not isinstance(items, list):
         raise BuildError(f"{url}: unexpected response")
     return {
-        it["name"][: -len(ext)].lower(): it["download_url"]
+        it["name"][: len(it["name"]) - len(ext)].lower(): it["download_url"]
         for it in items
         if it["type"] == "file" and it["name"].endswith(ext)
     }
+
+
+def github_commit_date(repo, ref, path=""):
+    """Date of the last commit on ref that touched path (the whole tree if path is empty)."""
+    url = f"https://api.github.com/repos/{repo}/commits?sha={urllib.parse.quote(ref)}&per_page=1"
+    if path:
+        url += "&path=" + urllib.parse.quote(path)
+    items = json.loads(http_get(url))
+    if not items:
+        return None
+    return datetime.datetime.fromisoformat(items[0]["commit"]["committer"]["date"].replace("Z", "+00:00"))
+
+
+def last_modified(url):
+    """When the content at url last changed: the commit date for raw.githubusercontent.com,
+    which sends no Last-Modified, else the Last-Modified header seen when url was downloaded."""
+    m = RAW_GITHUB_RE.match(url)
+    if m:
+        return github_commit_date(*m.groups())
+    value = _last_modified.get(url)
+    return email.utils.parsedate_to_datetime(value) if value else None

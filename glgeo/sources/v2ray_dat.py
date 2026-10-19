@@ -10,3 +10,7 @@ KEYS = {"url": (str, REQUIRED), "sha256_url": (str, None)}
 
 def load(src, kind, wanted):
     return parse_geosite_dat(net.fetch_checked(src["url"], src["sha256_url"]))
+
+
+def updated(src):
+    return [(src["url"], net.last_modified(src["url"]))]

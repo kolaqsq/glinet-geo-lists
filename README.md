@@ -19,7 +19,7 @@ raw.githubusercontent.com serves a new build within ~5 minutes. jsDelivr caches 
 
 | Path | Contents | xray equivalent |
 |---|---|---|
-| `geosite/<name>.txt` | domains of a category from v2fly/domain-list-community and runetfreedom | `geosite:<name>` |
+| `geosite/<name>.txt` | domains of a category from v2fly/domain-list-community, or of a list from the other sources below | `geosite:<name>` |
 | `geoip/<name>.txt` | IPv4 CIDRs of a country or service | `geoip:<name>` (IPv4 only) |
 | `geoip6/<name>.txt` | IPv6 CIDRs | `geoip:<name>` (IPv6 only) |
 | `presets/<name>.txt` | ready-made combinations defined in `config.json` | — |
@@ -54,7 +54,7 @@ All config keys (sources, options, guards) are described in [docs/config.md](doc
 - Networks from the list and IPs of resolved domains share an ipset of 65 536 entries per family. When it is full, rules silently stop working.
 - Very large domain lists can stall the router's DNS while they load.
 
-Presets are checked against these limits. A preset with `"aggregate_ips": true` merges nearby networks until they fit, at the cost of a few extra addresses (+6.7% for the 88.6K networks of `geoip:ru-blocked`). Single geosite/geoip lists are published whatever their size; the largest, `geosite/ru-blocked-all.txt` and `geosite/antifilter-download.txt` (~1.37M lines, ~25 MB each), are far over the limits. jsDelivr does not serve files over 20 MB, so use the raw.githubusercontent.com URL for them.
+Presets are checked against these limits. A preset with `"aggregate_ips": true` merges nearby networks until they fit, at the cost of a few extra addresses (+6.7% for the 88.6K networks of `geoip:ru-blocked`). Single geosite/geoip lists are published whatever their size; the largest, `geosite/ru-blocked-all.txt` and `geosite/antifilter-download.txt` (~1.55M lines, ~29 MB each), are far over the limits. jsDelivr does not serve files over 20 MB, so use the raw.githubusercontent.com URL for them.
 
 ## Safeguards against empty lists
 
@@ -64,6 +64,8 @@ In Exclude mode an empty list sends all traffic through the VPN; in the opposite
 - a preset exceeds the router limits above;
 - any file shrinks by more than `options.max_shrink` (50%) compared with the previous build.
 
+A source whose data has not changed for longer than its `max_age_days` does not fail the build: its lists are still published, and the build reports a warning. Each run of the GitHub workflow shows a summary with presets, sources and their last update, warnings and errors.
+
 `config.json` is checked before anything is downloaded: an unknown key, a wrong type or a malformed `include` item fails the build at once.
 
 ## Caveats
@@ -71,7 +73,7 @@ In Exclude mode an empty list sends all traffic through the VPN; in the opposite
 - Domain rules only work when clients use the router's DNS (no DoH/DoT in browsers or the OS). They work through the IPs of the domain, so other sites on a shared CDN IP follow the same rule.
 - An IPv6 line does not break the list, but routing IPv6 through the policy is untested. With IPv6 enabled, traffic may bypass the VPN.
 - Invalid lines are skipped one by one; the rest of the list still applies. Lines starting with `#` are fine.
-- Automatic refresh is not confirmed on firmware 4.11.0. The daily cron job in `/etc/gl_crontabs/crontabs.d/update_vpn_url` calls `/etc/init.d/vpnpolicy-apply`, which does not exist there.
+- The router refreshes the list once a day at 03:00 (its local time) with `/usr/bin/update_vpn_domain.sh`, and only downloads it when the file has changed. On a router upgraded from older firmware the cron job may be a leftover that does nothing, so the list is never refreshed: see [docs/router.md](docs/router.md#checking-on-your-router) for how to check and fix it.
 
 ## Building locally
 
@@ -80,7 +82,7 @@ python3 -m unittest discover -s tests
 python3 -m glgeo --out out --cache-dir .cache
 ```
 
-`scripts/build.py` does the same as `python3 -m glgeo`. `--cache-dir` keeps every download and reuses it later, so after the first run (~75 s) a rebuild runs offline in ~20 s. That's handy for trying preset changes. Without it, everything is downloaded again.
+`scripts/build.py` does the same as `python3 -m glgeo`. `--cache-dir` keeps every download and reuses it later, so after the first run (~75 s) a rebuild runs offline in ~20 s. That's handy for trying preset changes. Without it, everything is downloaded again. `--summary <file>` appends a Markdown summary of the build to the file; the workflow passes `$GITHUB_STEP_SUMMARY`, so it shows on the run page.
 
 Requires Python 3.9+, no third-party packages. Code layout:
 
@@ -88,19 +90,28 @@ Requires Python 3.9+, no third-party packages. Code layout:
 |---|---|
 | `glgeo/config.py` | loads `config.json`, checks it against the schema, fills defaults |
 | `glgeo/net.py` | downloads, download cache, checksums, GitHub directory listing |
-| `glgeo/formats/` | pure parsers: v2fly rules, `dlc.dat_plain.yml`, protobuf / `geosite.dat`, IP lists |
-| `glgeo/sources/` | one module per source `type` plus `REGISTRY`; `load_all` resolves name collisions and `min_lists` |
+| `glgeo/formats/` | pure parsers: v2fly rules, `dlc.dat_plain.yml`, protobuf / `geosite.dat`, hosts files, IP lists |
+| `glgeo/sources/` | one module per source `type` plus `REGISTRY`; `load_all` resolves name collisions, `min_lists` and `max_age_days`; v2fly `include:` rules are resolved across sources |
 | `glgeo/model.py` | `DomainSet`, `IpSet`: normalisation and the GL.iNet form |
 | `glgeo/presets.py` | `include` kinds (`geosite`, `geoip`, `geoip6`, `file`) and preset assembly |
 | `glgeo/guards.py`, `glgeo/output.py` | guards, writing lists and `index.json` |
 | `glgeo/pipeline.py` | config → sources → lists → presets → guards → index |
+| `glgeo/report.py` | warnings, GitHub annotations and the run summary (`--summary`) |
 
-A new source type is a module in `glgeo/sources/` with `KINDS`, `KEYS` and `load()`, plus a line in `REGISTRY`.
+A new source type is a module in `glgeo/sources/` with `KINDS`, `KEYS`, `load()` and `updated()`, plus a line in `REGISTRY`.
 
 ## Sources
 
-- [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community): `dlc.dat_plain.yml` from releases
-- [runetfreedom/russia-blocked-geosite](https://github.com/runetfreedom/russia-blocked-geosite): `geosite.dat` from the `release` branch (read directly, checksum verified). Only categories missing from v2fly are taken: ru-blocked, ru-blocked-all, ru-available-only-inside, refilter, antifilter-download, antifilter-download-community, gfw, win-spy, win-update, win-extra, u17. Categories with the same name as in v2fly (google, category-ads-all, …) come from v2fly, because runetfreedom modifies them.
+Domain lists:
+- [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community): `dlc.dat_plain.yml` from releases, all categories.
+- [antifilter.download](https://antifilter.download) → `antifilter-download` (the whole Roskomnadzor registry), [community.antifilter.download](https://community.antifilter.download) → `antifilter-download-community` (popular services, curated by the community), [Re:filter](https://github.com/1andrevich/Re-filter-lists) → `refilter`. Combined like in runetfreedom: `ru-blocked` = community + refilter, `ru-blocked-all` = all three.
+- [runetfreedom/russia-domains-list](https://github.com/runetfreedom/russia-domains-list) → `ru-available-only-inside` (sites that work only from Russian IPs; it includes v2fly `category-gov-ru`).
+- [Loyalsoldier/v2ray-rules-dat](https://github.com/Loyalsoldier/v2ray-rules-dat) → `gfw`.
+- [WindowsSpyBlocker](https://github.com/crazy-max/WindowsSpyBlocker) hosts files → `win-spy`, `win-update`, `win-extra`.
+
+These are the upstreams of [runetfreedom/russia-blocked-geosite](https://github.com/runetfreedom/russia-blocked-geosite), read directly: its `geosite.dat` has not been rebuilt since 2026-08-10.
+
+IP lists:
 - [Loyalsoldier/geoip](https://github.com/Loyalsoldier/geoip): countries (GeoLite2 and others) and services (telegram, google, cloudflare, …)
 - [runetfreedom/russia-blocked-geoip](https://github.com/runetfreedom/russia-blocked-geoip): ru-blocked, ru-whitelist, yandex and others
 
@@ -113,7 +124,13 @@ The published lists are not: each keeps the license of its source, see [NOTICE](
 | Lists | Source | License |
 |---|---|---|
 | `geosite/*` | v2fly/domain-list-community | MIT |
-| `geosite/*` (the 11 categories above), `geoip/ru-blocked`, `ru-blocked-community`, `ru-whitelist`, `re-filter`, `ddos-guard`, `yandex` | runetfreedom | GPL-3.0 |
+| `geosite/antifilter-download`, `antifilter-download-community` | antifilter.download | not stated |
+| `geosite/refilter` | Re:filter | MIT |
+| `geosite/ru-blocked`, `ru-blocked-all` | antifilter.download + Re:filter | not stated (antifilter) and MIT |
+| `geosite/ru-available-only-inside` | runetfreedom/russia-domains-list | no license file; runetfreedom distributes it under GPL-3.0 |
+| `geosite/gfw` | Loyalsoldier/v2ray-rules-dat | GPL-3.0 |
+| `geosite/win-*` | WindowsSpyBlocker | MIT |
+| `geoip/ru-blocked`, `ru-blocked-community`, `ru-whitelist`, `re-filter`, `ddos-guard`, `yandex` | runetfreedom/russia-blocked-geoip | GPL-3.0 |
 | other `geoip/*`, `geoip6/*` | Loyalsoldier/geoip, based on MaxMind GeoLite2 | CC BY-SA 4.0, GeoLite EULA |
 | `presets/ru-direct`, `presets/ru-blocked`, `presets/ru-blocked-dev` | mixed, includes runetfreedom | GPL-3.0 |
 | `presets/ru-direct-ip` | Loyalsoldier/geoip | CC BY-SA 4.0 |

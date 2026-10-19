@@ -7,7 +7,11 @@
     "geosite": [
       {"name": "yml", "type": "v2fly-plain-yml", "url": "https://example.test/dlc.yml", "min_lists": 2},
       {"name": "dat", "type": "v2ray-dat", "url": "https://example.test/geosite.dat",
-       "sha256_url": "https://example.test/geosite.dat.sha256sum"}
+       "sha256_url": "https://example.test/geosite.dat.sha256sum"},
+      {"name": "plain", "type": "url-lists", "lists": {
+        "joined": ["https://example.test/a.lst", "https://example.test/b.lst"],
+        "with-include": ["https://example.test/b.lst", "https://example.test/include.lst"]
+      }}
     ],
     "geoip": [
       {"name": "dir", "type": "github-dir", "repo": "test/geoip", "ref": "release", "path": "text"}

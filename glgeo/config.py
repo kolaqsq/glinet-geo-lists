@@ -22,7 +22,7 @@ OPTIONS = {
     "router_max_lines": (int, 200000),
     "router_max_ips": (int, 55000),
 }
-SOURCE_COMMON = {"name": (str, REQUIRED), "type": (str, REQUIRED), "min_lists": (int, 1)}
+SOURCE_COMMON = {"name": (str, REQUIRED), "type": (str, REQUIRED), "min_lists": (int, 1), "max_age_days": (int, 7)}
 PRESET = {"include": (list, REQUIRED), "min_lines": (int, 1), "aggregate_ips": (bool, False), "description": (str, "")}
 SOURCE_KINDS = ("geosite", "geoip")
 PRESET_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -60,7 +60,11 @@ def validate(raw, base_dir, errors):
                 errors.append(f"{where}.type: unknown type {src['type']!r}, known: {', '.join(sources.REGISTRY)}")
             elif mod and kind not in mod.KINDS:
                 errors.append(f"{where}.type: {src['type']!r} cannot be used for {kind}")
-            checked.append(_section(src, where, {**SOURCE_COMMON, **(mod.KEYS if mod else {})}, errors))
+            before = len(errors)
+            src = _section(src, where, {**SOURCE_COMMON, **(mod.KEYS if mod else {})}, errors)
+            if mod and len(errors) == before and hasattr(mod, "check"):
+                errors += [f"{where}.{e}" for e in mod.check(src)]
+            checked.append(src)
         srcs[kind] = checked
 
     out_presets = {}

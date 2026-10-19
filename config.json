@@ -10,14 +10,71 @@
         "name": "v2fly",
         "type": "v2fly-plain-yml",
         "url": "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat_plain.yml",
-        "min_lists": 1000
+        "min_lists": 1000,
+        "max_age_days": 30
       },
       {
-        "name": "runetfreedom",
-        "type": "v2ray-dat",
-        "url": "https://raw.githubusercontent.com/runetfreedom/russia-blocked-geosite/release/geosite.dat",
-        "sha256_url": "https://raw.githubusercontent.com/runetfreedom/russia-blocked-geosite/release/geosite.dat.sha256sum",
+        "name": "ru-blocked",
+        "type": "url-lists",
+        "lists": {
+          "antifilter-download": [
+            "https://antifilter.download/list/domains.lst"
+          ],
+          "antifilter-download-community": [
+            "https://community.antifilter.download/list/domains.lst"
+          ],
+          "refilter": [
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst"
+          ],
+          "ru-blocked": [
+            "https://community.antifilter.download/list/domains.lst",
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst"
+          ],
+          "ru-blocked-all": [
+            "https://antifilter.download/list/domains.lst",
+            "https://community.antifilter.download/list/domains.lst",
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/refs/heads/main/domains_all.lst"
+          ]
+        },
+        "max_age_days": 14,
         "min_lists": 5
+      },
+      {
+        "name": "runetfreedom-extra",
+        "type": "url-lists",
+        "lists": {
+          "ru-available-only-inside": [
+            "https://raw.githubusercontent.com/runetfreedom/russia-domains-list/main/ru-available-only-inside"
+          ]
+        },
+        "max_age_days": 0
+      },
+      {
+        "name": "gfw",
+        "type": "url-lists",
+        "lists": {
+          "gfw": [
+            "https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt"
+          ]
+        }
+      },
+      {
+        "name": "windows-spy-blocker",
+        "type": "url-lists",
+        "format": "hosts",
+        "lists": {
+          "win-spy": [
+            "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt"
+          ],
+          "win-update": [
+            "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/update.txt"
+          ],
+          "win-extra": [
+            "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/extra.txt"
+          ]
+        },
+        "max_age_days": 0,
+        "min_lists": 3
       }
     ],
     "geoip": [

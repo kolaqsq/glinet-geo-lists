@@ -24,3 +24,8 @@ def load(src, kind, wanted):
             log(f"geoip {name}: {bad} invalid lines skipped")
         result[name] = IpSet(v4, v6)
     return result
+
+
+def updated(src):
+    where = f"{src['repo']}@{src['ref']}" + (f"/{src['path']}" if src["path"] else "")
+    return [(where, net.github_commit_date(src["repo"], src["ref"], src["path"]))]

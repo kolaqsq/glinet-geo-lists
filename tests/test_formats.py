@@ -4,6 +4,7 @@ from helpers import pb
 
 from glgeo.errors import BuildError
 from glgeo.formats.geosite_dat import parse_geosite_dat
+from glgeo.formats.hosts import parse_hosts_file
 from glgeo.formats.iplist import parse_ip_file
 from glgeo.formats.plain_yml import parse_plain_yml
 from glgeo.formats.rules import parse_rule
@@ -55,6 +56,13 @@ class IpListTest(unittest.TestCase):
         self.assertEqual([str(n) for n in v4], ["10.0.0.0/25", "10.0.0.0/25"])
         self.assertEqual([str(n) for n in v6], ["2a00::/16"])
         self.assertEqual(bad, 1)
+
+
+class HostsTest(unittest.TestCase):
+    def test_parse(self):
+        text = "### header\n0.0.0.0 a.example.com b.example.com # c\n127.0.0.1\nnot-an-ip x.com\n::1 v6.example.com\n"
+        self.assertEqual([v for _, v, _ in parse_hosts_file(text)], ["a.example.com", "b.example.com", "v6.example.com"])
+        self.assertEqual({k for k, _, _ in parse_hosts_file(text)}, {"domain"})
 
 
 if __name__ == "__main__":
