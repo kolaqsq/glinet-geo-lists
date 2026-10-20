@@ -8,7 +8,7 @@ GL.iNet firmware does not support geoip/geosite, but since 4.7 its VPN Policy ca
 
 VPN Dashboard → Policy Mode → "Exclude specified Domain / IP List" (listed traffic bypasses the VPN) or the opposite mode (only listed traffic goes through the VPN) → paste a list URL.
 
-URLs (branch `release`, rebuilt daily at 00:00 UTC):
+URLs (branch `release`, rebuilt daily at 16:00 UTC; the router fetches a list at 03:00 its time):
 
 ```
 https://raw.githubusercontent.com/kolaqsq/glinet-geo-lists/release/<path>

@@ -2,7 +2,9 @@ name: build
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # daily at 00:00 UTC; GitHub may start it later when runners are busy
+    # GL.iNet fetches the list at 03:00 router time (00:00 UTC in Moscow). GitHub often starts
+    # scheduled runs hours late (~4 h observed), so build at 16:00 UTC to be published well before.
+    - cron: "0 16 * * *"
   workflow_dispatch:
   push:
     branches: [main]
