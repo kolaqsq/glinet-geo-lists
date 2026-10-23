@@ -62,7 +62,7 @@ In Exclude mode an empty list sends all traffic through the VPN; in the opposite
 - a source is unreachable or yields fewer lists than its `min_lists`;
 - a preset is shorter than its `min_lines`;
 - a preset exceeds the router limits above;
-- any file shrinks by more than `options.max_shrink` (50%) compared with the previous build.
+- a preset, or the total of all `geosite/`, `geoip/` or `geoip6/` lists, shrinks by more than `options.max_shrink` (50%) compared with the previous build. A single list that shrinks that much only gives a warning.
 
 A source whose data has not changed for longer than its `max_age_days` does not fail the build: its lists are still published, and the build reports a warning. Each run of the GitHub workflow shows a summary with presets, sources and their last update, warnings and errors.
 

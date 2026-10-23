@@ -44,12 +44,30 @@ def load_previous_index(ref, report):
         return None
 
 
+TOTAL_DIRS = ("geosite", "geoip", "geoip6")
+
+
 def check_shrink(index, previous, max_shrink, min_prev, report):
+    """A preset that shrank by more than max_shrink fails the build: that is what routers load.
+    A single list only warns: upstream data really changes (one country losing most of its
+    networks), and failing would block every other list. A broken source shows up in the total
+    of its directory, so a total that shrank by more than max_shrink fails the build."""
     errors = []
     for rel, old in sorted(previous.items()):
         new = index.get(rel)
         if new is None:
             report.warn(f"{rel} disappeared (had {old} lines)")
         elif old >= min_prev and new < old * (1 - max_shrink):
-            errors.append(f"{rel}: {old} -> {new} lines")
+            if rel.startswith("presets/"):
+                errors.append(f"{rel}: {old} -> {new} lines")
+            else:
+                report.warn(f"{rel} shrank: {old} -> {new} lines")
+    for d in TOTAL_DIRS:
+        old, new = _total(previous, d), _total(index, d)
+        if old >= min_prev and new < old * (1 - max_shrink):
+            errors.append(f"{d}/: {old} -> {new} lines in total")
     return errors
+
+
+def _total(files, d):
+    return sum(n for rel, n in files.items() if rel.startswith(d + "/"))
